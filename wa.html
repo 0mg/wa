@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<script>
+var atx = new AudioContext;
+var buf, buf2;
+fetch("kick.wav").then(x=>x.arrayBuffer().then(x=>{
+  atx.decodeAudioData(x).then(f=>{
+    buf = f;
+  });
+}));
+fetch("snare.wav").then(x=>x.arrayBuffer().then(x=>{
+  atx.decodeAudioData(x).then(f=>{
+    buf2 = f;
+  });
+}));
+addEventListener("keydown", function(e) {
+  var src = atx.createBufferSource();
+  src.connect(atx.destination);
+  src.buffer = e.key == "k" ? buf : buf2;
+  src.start();
+});
+</script>
+<title>JK</title>

@@ -1,0 +1,6 @@
+#include <windows.h>
+
+1 WAVE "kick.wav"
+2 WAVE "snare.wav"
+3 WAVE "none.wav"
+4 WAVE "bell.wav"
