@@ -4,38 +4,28 @@
 void __start__(void) {ExitProcess(WinMain(GetModuleHandle(NULL), 0, NULL, 0));}
 
 class WavePlayer kick;
+class WavePlayer kick2;
 class WavePlayer snare;
+class WavePlayer snare2;
 class WavePlayer bell;
 class WavePlayer none;
 
+inline void k2p(BYTE *keys, BYTE k, BYTE *f, WavePlayer *p) {
+  if (keys[k] & 0x80) {
+    if (f[k] == 0) {
+      f[k] = 1;
+      p->play();
+    }
+  } else f[k] = 0;
+}
+static BYTE flags[256];
 DWORD WINAPI thfun(LPVOID some) {
-  static BOOL j = 0, k = 0, f = 0, d = 0;
-  do {
-    if (GetKeyState('K') < 0) {
-      if (k == 0) {
-        k = 1;
-        kick.play();
-      }
-    } else k = 0;
-    if (GetKeyState('J') < 0) {
-      if (j == 0) {
-        j = 1;
-        snare.play();
-      }
-    } else j = 0;
-    if (GetKeyState('D') < 0) {
-      if (d == 0) {
-        d = 1;
-        kick.play();
-      }
-    } else d = 0;
-    if (GetKeyState('I') < 0) {
-      if (f == 0) {
-        f = 1;
-        bell.play();
-      }
-    } else f = 0;
-  } while (some);
+  BYTE *keys = (BYTE *)some;
+  k2p(keys, 'K', flags, &kick);
+  k2p(keys, 'J', flags, &snare);
+  k2p(keys, 'I', flags, &bell);
+  k2p(keys, 'D', flags, &kick2);
+  k2p(keys, 'F', flags, &snare2);
   return 0;
 }
 
@@ -74,15 +64,28 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
     NULL, NULL, hi, NULL);
   if (hwnd == NULL) return 0;
 
-  kick.init(MAKEINTRESOURCE(1), TEXT("WAVE"));
-  snare.init(MAKEINTRESOURCE(2), TEXT("WAVE"));
-  none.init(MAKEINTRESOURCE(3), TEXT("WAVE"));
-  bell.init(MAKEINTRESOURCE(4), TEXT("WAVE"));
-  //kick.init(TEXT("kick.wav")), snare.init(TEXT("snare.wav"));
+  if (1) {
+    kick.init(MAKEINTRESOURCE(1), TEXT("WAVE"));
+    kick2.init(MAKEINTRESOURCE(1), TEXT("WAVE"));
+    snare.init(MAKEINTRESOURCE(2), TEXT("WAVE"));
+    snare2.init(MAKEINTRESOURCE(2), TEXT("WAVE"));
+    none.init(MAKEINTRESOURCE(3), TEXT("WAVE"));
+    bell.init(MAKEINTRESOURCE(4), TEXT("WAVE"));
+  } else {
+    kick.init(TEXT("kick.wav"), NULL);
+    kick2.init(TEXT("kick.wav"), NULL);
+    snare.init(TEXT("snare.wav"), NULL);
+    snare2.init(TEXT("snare.wav"), NULL);
+    none.init(TEXT("none.wav"), NULL);
+    bell.init(TEXT("bell.wav"), NULL);
+  }
+  SecureZeroMemory(&flags, 256);
 
   MSG msg;
+  BYTE keys[256];
   while (GetMessage(&msg, NULL, 0, 0) > 0) {
-    thfun(NULL);
+    GetKeyboardState(keys);
+    thfun(keys);
     TranslateMessage(&msg);
     DispatchMessage(&msg);
   }

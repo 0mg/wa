@@ -2,17 +2,11 @@
 
 class WavePlayer {
 private:
-  HWAVEOUT waveout;
-  WAVEFORMATEX wfx;
-  WAVEHDR whdr;
+  HWAVEOUT wavout;
+  WAVEFORMATEX wavfmt;
+  WAVEHDR wavhdr;
   BOOL loadWave(LPTSTR filename, MMIOINFO *minfo) {
-    HMMIO file;
-    if (filename) {
-      file = mmioOpen(filename, NULL, MMIO_READ);
-    } else {
-      file = mmioOpen(NULL, minfo, MMIO_READ);
-    }
-    // init vars
+    // # ready vars to analyze
     MMCKINFO root, head, body;
     SecureZeroMemory(&root, sizeof(MMCKINFO));
     SecureZeroMemory(&head, sizeof(MMCKINFO));
@@ -21,16 +15,21 @@ private:
     head.ckid = mmioStringToFOURCC(TEXT("fmt "), 0);
     body.ckid = mmioStringToFOURCC(TEXT("data"), 0);
     // # Analyze RIFF file
+    HMMIO file = mmioOpen(filename, minfo, MMIO_READ);
     if (file) {
       // analyze
       if (mmioDescend(file, &root, NULL, MMIO_FINDRIFF) == 0) { //WAVE
-        if (mmioDescend(file, &head, NULL, MMIO_FINDCHUNK) == 0) { //fmt
-          mmioRead(file, (HPSTR)&wfx, head.cksize);
+        if (mmioDescend(file, &head, &root, MMIO_FINDCHUNK) == 0) { //fmt
+          mmioRead(file, (HPSTR)&wavfmt, head.cksize);
           mmioAscend(file, &head, 0);
-          if (mmioDescend(file, &body, NULL, MMIO_FINDCHUNK) == 0) { //data
-            whdr.dwBufferLength = body.cksize;
-            whdr.lpData = (LPSTR)HeapAlloc(GetProcessHeap(), 0, body.cksize);
-            mmioRead(file, (HPSTR)whdr.lpData, body.cksize);
+          if (mmioDescend(file, &body, &root, MMIO_FINDCHUNK) == 0) { //data
+            wavhdr.dwBufferLength = body.cksize;
+            if (minfo) {
+              wavhdr.lpData = minfo->pchBuffer + body.dwDataOffset;
+            } else {
+              wavhdr.lpData = (LPSTR)HeapAlloc(GetProcessHeap(), 0, body.cksize);
+              mmioRead(file, (HPSTR)wavhdr.lpData, body.cksize);
+            }
             //mmioAscend(file, &body, 0);
           }
         }
@@ -41,31 +40,38 @@ private:
     return file && head.cksize && body.cksize;
   }
 public:
-  void init(LPTSTR filenameOrId, LPTSTR restype = NULL) {
+  void init(LPTSTR filenameOrId, LPTSTR restype) {
     // fn("test.wav");
     // fn(MAKEINTRESOURCE(ID_TEST_WAV), "WAVE");
-    SecureZeroMemory(&wfx, sizeof(WAVEFORMATEX));
-    SecureZeroMemory(&whdr, sizeof(WAVEHDR));
-    BOOL result = FALSE;
+    // # init instance
+    SecureZeroMemory(&wavfmt, sizeof(WAVEFORMATEX));
+    SecureZeroMemory(&wavhdr, sizeof(WAVEHDR));
+    // # load sound (file or resource)
+    LPTSTR filename = filenameOrId;
+    MMIOINFO minfo, *pinfo = NULL;
     if (restype) {
-      HINSTANCE hi = GetModuleHandle(NULL);
-      HRSRC fres = FindResource(hi, filenameOrId, restype);
-      MMIOINFO minfo;
+      filename = NULL;
+      pinfo = &minfo;
       SecureZeroMemory(&minfo, sizeof(MMIOINFO));
-      minfo.pchBuffer = (HPSTR)LockResource(LoadResource(hi, fres));
-      minfo.cchBuffer = SizeofResource(hi, fres);
+      HRSRC fres = FindResource(NULL, filenameOrId, restype);
+      minfo.pchBuffer = (HPSTR)LockResource(LoadResource(NULL, fres));
+      minfo.cchBuffer = SizeofResource(NULL, fres);
       minfo.fccIOProc = FOURCC_MEM;
-      result = loadWave(NULL, &minfo);
-    } else {
-      result = loadWave(filenameOrId, NULL);
     }
-    if (result) {
-      waveOutOpen(&waveout, WAVE_MAPPER, &wfx, 0, 0, CALLBACK_NULL);
-      waveOutPrepareHeader(waveout, &whdr, sizeof(WAVEHDR));
+    // # ready to play sound
+    if (loadWave(filename, pinfo)) {
+      waveOutOpen(&wavout, WAVE_MAPPER, &wavfmt, 0, 0, CALLBACK_NULL);
+      waveOutPrepareHeader(wavout, &wavhdr, sizeof(WAVEHDR));
     }
   }
   void play() {
-    waveOutReset(waveout);
-    waveOutWrite(waveout, &whdr, sizeof(WAVEHDR));
+    waveOutReset(wavout);
+    waveOutWrite(wavout, &wavhdr, sizeof(WAVEHDR));
   }
+  /*void uninit() {
+    waveOutReset(wavout);
+    waveOutUnprepareHeader(wavout, &wavhdr, sizeof(WAVEHDR));
+    waveOutClose(wavout);
+    HeapFree(GetProcessHeap(), 0, wavhdr.lpData);
+  }*/
 };
