@@ -66,9 +66,9 @@ int WINAPI WinMain(HINSTANCE hi, HINSTANCE hp, LPSTR cl, int cs) {
 
   if (1) {
     kick.init(MAKEINTRESOURCE(1), TEXT("WAVE"));
-    kick2.init(MAKEINTRESOURCE(1), TEXT("WAVE"));
+    kick2.init(&kick);
     snare.init(MAKEINTRESOURCE(2), TEXT("WAVE"));
-    snare2.init(MAKEINTRESOURCE(2), TEXT("WAVE"));
+    snare2.init(&snare);
     none.init(MAKEINTRESOURCE(3), TEXT("WAVE"));
     bell.init(MAKEINTRESOURCE(4), TEXT("WAVE"));
   } else {

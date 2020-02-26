@@ -64,6 +64,12 @@ public:
       waveOutPrepareHeader(wavout, &wavhdr, sizeof(WAVEHDR));
     }
   }
+  void init(WavePlayer *wp) { // copy from other instance
+    wavfmt = wp->wavfmt;
+    wavhdr = wp->wavhdr;
+    waveOutOpen(&wavout, WAVE_MAPPER, &wavfmt, 0, 0, CALLBACK_NULL);
+    waveOutPrepareHeader(wavout, &wavhdr, sizeof(WAVEHDR));
+  }
   void play() {
     waveOutReset(wavout);
     waveOutWrite(wavout, &wavhdr, sizeof(WAVEHDR));
