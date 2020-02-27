@@ -39,6 +39,15 @@ LRESULT CALLBACK WindowProc(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp) {
     none.play();
     return 0;
   }
+  /*case WM_KEYDOWN: // flow to follow
+    if (lp & 0x40000000) return 0;
+  case WM_KEYUP: {
+    HDC hdc = GetDC(hwnd);
+    SelectObject(hdc, GetStockObject(msg == WM_KEYUP ? BLACK_BRUSH : WHITE_BRUSH));
+    PatBlt(hdc, (wp - 'A') * 50, 0, 50, 50, PATCOPY);
+    ReleaseDC(hwnd, hdc);
+    return 0;
+  }*/
   case WM_DESTROY: {
     PostQuitMessage(0);
     return 0;
